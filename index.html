@@ -571,6 +571,8 @@
     position:absolute; top:110px; bottom:0; z-index:6;
     background:transparent; border:none; padding:0; cursor:pointer;
   }
+  .tap-zone{ -webkit-touch-callout:none; }
+  .phone.is-paused *, .phone.is-paused *::before, .phone.is-paused *::after{ animation-play-state:paused !important; }
   .tap-zone.left{ left:0; width:40%; }
   .tap-zone.right{ right:0; width:60%; }
 
@@ -1021,7 +1023,9 @@
   var tapLeft = document.getElementById('tapLeft');
   var tapRight = document.getElementById('tapRight');
 
-  var state = { index: 0, screenStart: 0, dur: 1200, noHint: false };
+  var state = { index: 0, screenStart: 0, dur: 1200, noHint: false, pausedAt: null };
+  var READ_HOLD = 2500;     // ms of reading time on a story after its entrance
+  var LONG_PRESS_MS = 220;  // hold longer than this on a tap zone = pause
 
   // Bumped on every renderScreen() call; a timer scheduled for an
   // older screen checks this before touching shared elements (like
@@ -1210,7 +1214,9 @@
 
     // "Klepnutím pokračujete" only on the intro (first screen with the
     // progress bar); after that the person already knows to tap.
-    return { dur: (reduceMotion ? 0 : hintAt) + 400, noHint: true };
+    // + READ_HOLD: time to actually read the screen once everything is
+    // in, before auto-advance (long-press pauses for longer reads).
+    return { dur: (reduceMotion ? 0 : hintAt) + 400 + READ_HOLD, noHint: true };
   }
 
   function buildEntry(){
@@ -1644,6 +1650,8 @@
     if (i >= SCREENS.length) i = SCREENS.length - 1; // thanks is the end
     state.index = i;
     state.screenStart = performance.now();
+    state.pausedAt = null;
+    phoneEl.classList.remove('is-paused');
     renderScreen(i);
     switchBackground(i); // see the video-background section below
   }
@@ -1671,7 +1679,55 @@
   // only reacts to its "Spustit" button; summary and thanks move on only
   // via their buttons (a tap there just finishes their entrance);
   // tap-left never goes back past the intro into the entry popup.
+  // ---- long-press = pause (intro + stories) ----
+  // Holding a finger on the screen freezes the progress bar, the
+  // auto-advance countdown, the background video and CSS animations;
+  // letting go resumes. A short tap still navigates. On desktop, hold
+  // the Space bar (or the mouse button) for the same.
+  var press = null, suppressClick = false;
+  function canPause(){ var t = SCREENS[state.index].type; return t === 'intro' || t === 'story'; }
+  function frontVideo(){
+    var sc = SCREENS[state.index];
+    return (sc && sc.bg && bgSlots && bgSlots[bgFrontIndex]) ? bgSlots[bgFrontIndex].video : null;
+  }
+  function pauseStory(){
+    if (state.pausedAt || !canPause()) return;
+    state.pausedAt = performance.now();
+    var v = frontVideo(); if (v) v.pause();
+    phoneEl.classList.add('is-paused');
+  }
+  function resumeStory(){
+    if (!state.pausedAt) return;
+    state.screenStart += performance.now() - state.pausedAt;
+    state.pausedAt = null;
+    var v = frontVideo(); if (v) safePlay(v);
+    phoneEl.classList.remove('is-paused');
+  }
+  [tapLeft, tapRight].forEach(function(zone){
+    zone.addEventListener('pointerdown', function(){
+      if (!canPause()) return;
+      press = { long: false, timer: setTimeout(function(){ press.long = true; pauseStory(); }, LONG_PRESS_MS) };
+    });
+    function release(){
+      if (!press) return;
+      clearTimeout(press.timer);
+      if (press.long){ resumeStory(); suppressClick = true; } // the click that follows is not a tap
+      press = null;
+    }
+    zone.addEventListener('pointerup', release);
+    zone.addEventListener('pointercancel', release);
+    zone.addEventListener('pointerleave', release);
+    zone.addEventListener('contextmenu', function(e){ e.preventDefault(); }); // no long-press menu
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.code === 'Space' && !e.repeat && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(e.target.tagName)){ e.preventDefault(); pauseStory(); }
+  });
+  document.addEventListener('keyup', function(e){
+    if (e.code === 'Space') resumeStory();
+  });
+
   tapRight.addEventListener('click', function(){
+    if (suppressClick){ suppressClick = false; return; }
     retryBgPlayback(); // a tap is a real user gesture — good moment to retry blocked autoplay
     var type = SCREENS[state.index].type;
     if (type === 'entry') return;
@@ -1680,6 +1736,7 @@
     if (t < state.dur) skipToEnd();
   });
   tapLeft.addEventListener('click', function(){
+    if (suppressClick){ suppressClick = false; return; }
     retryBgPlayback();
     if (SCREENS[state.index].type === 'entry') return;
     goTo(Math.max(INTRO_INDEX, state.index - 1));
@@ -1711,9 +1768,9 @@
     return sc && sc.type === 'story' && next && next.type === 'story';
   }
   function loop(){
-    var t = performance.now() - state.screenStart;
+    var t = (state.pausedAt || performance.now()) - state.screenStart;
     updateProgress(t);
-    if (t >= state.dur && shouldAutoAdvance(state.index)) goTo(state.index + 1);
+    if (!state.pausedAt && t >= state.dur && shouldAutoAdvance(state.index)) goTo(state.index + 1);
     requestAnimationFrame(loop);
   }
 
