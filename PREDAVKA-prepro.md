@@ -68,18 +68,74 @@ Figma počítá „line-height: auto“ u On Air jako ~1,4× velikosti písma. P
 - Podtitulek: Body 1 16/22, 16 pod nadpisem, text **„Chcete udělat radost svým blízkým,↵máme pro vás Voucher.“** (dřív „Chcete-li…“, zalomení je vynucené).
 - Tlačítko „Zobrazit voucher“: spodní hrana 50 nad spodkem – beze změny.
 
-## Animace (beze změny, pro úplnost)
-Všechny texty nastupují stejně: průhlednost 0 → 1 za **480 ms (ease)** a posun 16 → 0 bodů za **620 ms, cubic-bezier(.2,.8,.2,1)**.
+## Animace a časování
 
-| Obrazovka | Časování od vstupu na obrazovku |
+Všechny časy jsou v ms **od vstupu na obrazovku** (t = 0). Zdroj: `index.html` (konstanty `BLOCK_GAP`, `LEAD_TO_VALUE`, `COUNT_UP_MS`, `CARD_ITEM_GAP`, `READ_HOLD`, funkce `buildIntro/buildStory/buildSummary/buildThanks`).
+
+**Nástup každého prvku** (texty, řádky hodnot, citát, tlačítka): průhlednost 0 → 1 za **480 ms (ease)** a zároveň posun nahoru za **620 ms, cubic-bezier(.2,.8,.2,1)**. Výchozí posun: nadpisy a úvodní věty 16 bodů, řádky hodnot 20, citát 12, nadpis souhrnu a texty Díky 14, tlačítka 16.
+
+**Načítání čísel:** začne současně s nástupem řádku hodnot, běží **900 ms** z 0 na finální hodnotu, easing easeOutCubic (`1 − (1 − p)³`), zaokrouhleno na celá čísla, formát cs-CZ (mezera jako oddělovač tisíců). Číslice jsou proporcionální (jako ve Figmě), proto číslu předem rezervujte šířku finální hodnoty a zarovnejte ho doprava, aby se řádek nehýbal (maketa: `animateCountUp()`, `min-width`).
+
+### Intro
+| Čas | Co se stane |
 |---|---|
-| Intro | nadpis 200 ms, podtitulek 900 ms |
-| Story | blok *i*: úvodní věta 200 + i·1500 ms, hodnoty +350 ms; čísla se načítají od 0 za **900 ms** (easeOutCubic); citát po posledním bloku; tlačítko poslední story +700 ms po citátu |
-| Souhrn | nadpis 100 ms, karta 350 ms (scale .92 → 1, rotace −4° → 0, posun 24 → 0), položky 700 + i·350 ms (s načítáním čísel), houpnutí karty v 1000 ms (2,2 s, rotateY ±16° + odlesk), tlačítka 700 + n·350 + 300 ms |
-| Díky | logo O₂ (Lottie) 250 ms + rozostření 40 → 0 za 560 ms, nadpis 750 ms, podtitulek 950 ms, tlačítko 1250 ms; bubliny na pozadí v bezešvé 15s smyčce (`img/bubbles/bubbles.json`) |
-| Pozadí | video smyčka na intru a stories, při vstupu rozostření 28 → 0 a scale 1,12 → 1 za 1,2 s; přechod mezi obrazovkami crossfade 350 ms |
+| 200 | nadpis |
+| 900 | podtitulek |
+| 1 580 | „Klepnutím pokračujete“ |
+| — | **čeká na tap** (žádný automatický posun) |
 
-**Nové u načítání čísel:** číslice jsou proporcionální (jako ve Figmě), ne tabulkové. Aby se řádek během načítání nehýbal, rezervujte číslu předem šířku jeho finální hodnoty a zarovnejte ho doprava (maketa: `animateCountUp()`, `min-width`).
+### Story (obecně, blok *i* = 0, 1, …)
+| Čas | Co se stane |
+|---|---|
+| 200 + i·1500 | úvodní věta bloku |
+| 550 + i·1500 | řádek hodnot + start načítání čísel (900 ms) |
+| 200 + n·1500 | citát (n = počet bloků) |
+| konec nástupu | s citátem: 200 + n·1500 + 700 + 400; bez citátu: 200 + n·1500 + 100 + 400 |
+| konec nástupu + **2 500** | **automatický posun** na další story (čas na čtení `READ_HOLD`) |
+
+Progress bar: aktivní dílek se plní lineárně od 0 do 100 % po celou dobu story (nástup + čas na čtení).
+
+### Story – konkrétně s aktuálními daty
+| | Story 1 (2 bloky + citát) | Story 2 (2 bloky) | Story 3 (1 blok + citát, poslední) |
+|---|---|---|---|
+| úvodní věta 1 | 200 | 200 | 200 |
+| čísla 1 (načítání) | 550 → 1 450 | 550 → 1 450 | 550 → 1 450 |
+| úvodní věta 2 | 1 700 | 1 700 | – |
+| čísla 2 (načítání) | 2 050 → 2 950 | 2 050 → 2 950 | – |
+| citát | 3 200 | – | 1 700 |
+| tlačítko Pokračovat | – | – | 2 400 |
+| konec nástupu | 4 300 | 3 700 | 2 800 |
+| **posun na další obrazovku** | **6 800** (auto) | **6 200** (auto) | **čeká na tlačítko** |
+
+### Souhrn
+| Čas | Co se stane |
+|---|---|
+| 100 | nadpis |
+| 350 | karta (scale .92 → 1, rotace −4° → 0, posun 24 → 0) |
+| 700 | položka 1 + načítání čísel (900 ms) |
+| 1 000 | houpnutí karty: 2 200 ms, rotateY 0 → −16° → +13° → −4° → 0 (+ odlesk), jednou |
+| 1 050 | položka 2 + načítání čísel |
+| 1 750 | tlačítka Sdílet / Pokračovat |
+| — | čeká na tlačítko (žádný automatický posun) |
+
+### Díky
+| Čas | Co se stane |
+|---|---|
+| 0 | bubliny na pozadí: prolnutí 1 200 ms, pak bezešvá 15s smyčka (`img/bubbles/bubbles.json`) |
+| 250 | logo O₂ – Lottie `lottie/o2-logo.json` (O hotové ve snímku 22, „2“ ve snímku 36 @ 60 fps = 600 ms), web navíc rozostření 40 → 0 za 560 ms |
+| 750 | nadpis |
+| 950 | podtitulek |
+| 1 250 | tlačítko Zobrazit voucher |
+
+### Pozadí (intro + stories)
+- Video ve smyčce, při každém vstupu na obrazovku se spustí od začátku s rozostřením 28 → 0 a scale 1,12 → 1 za **1 200 ms** (cubic-bezier(.2,.7,.2,1)).
+- Přechod mezi obrazovkami: crossfade **350 ms** (linear).
+
+### Ovládání
+- **Tap vpravo** (60 % šířky): na intru a story okamžitě další obrazovka (i během nástupu). Na souhrnu a Díky jen dokončí nástup.
+- **Tap vlevo** (40 % šířky): předchozí obrazovka od začátku (ne dál než intro).
+- **Podržení** déle než **220 ms**: pauza – zastaví progress bar, odpočet do automatického posunu, video na pozadí i animace; po puštění pokračuje, nepřepíná. (Desktop maketa: i mezerník.)
+- **×**: zpět na vstupní obrazovku.
 
 `prefers-reduced-motion` / systémové omezení pohybu: bez posunů, jen krátké prolnutí (200 ms), čísla rovnou finální.
 
