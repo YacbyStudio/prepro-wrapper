@@ -496,7 +496,7 @@
     display:flex; flex-direction:column; align-items:center;
     padding:218px 16px 0; text-align:center;
   }
-  /* Logo = Lottie (lottie/o2-logo-intro.json, the same file the devs
+  /* Logo = Lottie (lottie/o2-logo.json, the same file the devs
      get). The 135px box only reserves the Figma slot; the 375×375 Lottie
      comp has the "O" exactly in its centre, so centring the comp on the
      box centres the O (not the whole O₂) on the screen. Vertically the O
@@ -1339,7 +1339,7 @@
     return { dur: (reduceMotion ? 0 : btnAt) + 400, noHint: true };
   }
 
-  // Thanks: the O₂ logo plays lottie/o2-logo-intro.json (O flies in big
+  // Thanks: the O₂ logo plays lottie/o2-logo.json (O flies in big
   // & blurred and settles, the "2" slides in), then the texts and the
   // button — after the reference end-screen video.
   var LOGO_AT = 250;
@@ -1347,7 +1347,7 @@
   // The same JSON the devs get, minus its Gaussian Blur effects (see
   // .thanks-lottie.blur-in for why the web does the blur in CSS).
   function loadLogoLottie(){
-    if (!logoLottie) logoLottie = fetch('lottie/o2-logo-intro.json').then(function(r){ return r.json(); }).then(function(d){
+    if (!logoLottie) logoLottie = fetch('lottie/o2-logo.json').then(function(r){ return r.json(); }).then(function(d){
       d.layers.forEach(function(l){ delete l.ef; });
       return d;
     });

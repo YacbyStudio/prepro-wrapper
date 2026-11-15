@@ -102,4 +102,4 @@ thanks.sub:                         'Chcete udělat radost svým blízkým,\nmá
 
 ## Otevřené body
 - **Pozadí share karty:** ve Figmě je (`wrapper_sharecard_bg_dark.webp` z CDN O2) o něco světlejší než `img/card-bg.jpg` v maketě. Do aplikace použijte asset z Figmy / CDN.
-- **Lottie loga na obrazovce Díky:** maketa načítá `lottie/o2-logo-intro.json`, v pracovní složce je teď jen `lottie/o2-logo.json` – před nasazením sjednotit.
+- ~~**Lottie loga na obrazovce Díky:** sjednotit název souboru~~ – vyřešeno: maketa i předávka používají `lottie/o2-logo.json` (obsah beze změny proti dřívějšímu `o2-logo-intro.json`).
