@@ -1631,13 +1631,12 @@
   }
 
   // ---------------------------------------------------------------
-  // Navigation — tap/click/arrow-key only, never a timer that moves
-  // the story on by itself. Tap-right on the intro/stories goes
+  // Navigation — taps/arrow keys, plus auto-advance between stories
+  // (see loop()): the intro and the last story wait for the person.
+  // Tap-right on the intro/stories goes
   // straight to the next screen, even mid-entrance. Tap-left always
   // restarts the previous screen from t=0. × goes back to the entry
-  // popup. This still fully respects "never guess a reading time
-  // and never auto-advance" — every screen change is a real, explicit
-  // action from the person.
+  // popup.
   // ---------------------------------------------------------------
   function goTo(i, opts){
     opts = opts || {};
@@ -1702,9 +1701,19 @@
   // continuous, t/dur every frame, per the spec). Everything else is
   // discrete state flips via setTimeout + CSS transitions above.
   // ---------------------------------------------------------------
+  // Auto-advance: the intro waits for a tap; every story except the
+  // last one moves on by itself once its entrance has played (= its
+  // progress segment is full). The last story waits for its
+  // "Pokračovat" button. rAF pauses in a background tab, so a hidden
+  // tab never skips ahead.
+  function shouldAutoAdvance(i){
+    var sc = SCREENS[i], next = SCREENS[i + 1];
+    return sc && sc.type === 'story' && next && next.type === 'story';
+  }
   function loop(){
     var t = performance.now() - state.screenStart;
     updateProgress(t);
+    if (t >= state.dur && shouldAutoAdvance(state.index)) goTo(state.index + 1);
     requestAnimationFrame(loop);
   }
 
