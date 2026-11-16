@@ -91,7 +91,7 @@ Všechny časy jsou v ms **od vstupu na obrazovku** (t = 0). Zdroj: `index.html`
 | 550 + i·1500 | řádek hodnot + start načítání čísel (900 ms) |
 | 200 + n·1500 | citát (n = počet bloků) |
 | konec nástupu | s citátem: 200 + n·1500 + 700 + 400; bez citátu: 200 + n·1500 + 100 + 400 |
-| konec nástupu + **2 500** | **automatický posun** na další story (čas na čtení `READ_HOLD`) |
+| konec nástupu + **2 000** | **automatický posun** na další story (čas na čtení `READ_HOLD`) |
 
 Progress bar: aktivní dílek se plní lineárně od 0 do 100 % po celou dobu story (nástup + čas na čtení).
 
@@ -105,7 +105,7 @@ Progress bar: aktivní dílek se plní lineárně od 0 do 100 % po celou dobu st
 | citát | 3 200 | – | 1 700 |
 | tlačítko Pokračovat | – | – | 2 400 |
 | konec nástupu | 4 300 | 3 700 | 2 800 |
-| **posun na další obrazovku** | **6 800** (auto) | **6 200** (auto) | **čeká na tlačítko** |
+| **posun na další obrazovku** | **6 300** (auto) | **5 700** (auto) | **čeká na tlačítko** |
 
 ### Souhrn
 | Čas | Co se stane |
